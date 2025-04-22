@@ -1,0 +1,183 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Evaluador de Apuestas - Ruleta</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js">
+    function evaluar() {
+      const rangos = [100, 200, 500, 1000];
+      let sumaBajo = 0, sumaAlto = 0, sumaPeso = 0;
+
+      rangos.forEach(r => {
+        const bajo = parseFloat(document.getElementById("bajo" + r).value);
+        const alto = parseFloat(document.getElementById("alto" + r).value);
+        const resultado = isNaN(bajo) || isNaN(alto)
+          ? "❌ Faltan datos"
+          : recomendar(bajo, alto);
+        document.getElementById("r" + r).textContent = resultado;
+
+        if (!isNaN(bajo) && !isNaN(alto)) {
+          sumaBajo += bajo * r;
+          sumaAlto += alto * r;
+          sumaPeso += r;
+        }
+      });
+
+      if (sumaPeso > 0) {
+        const promedioBajo = sumaBajo / sumaPeso;
+        const promedioAlto = sumaAlto / sumaPeso;
+        let total = "🎯 Igual probabilidad";
+
+        if (promedioBajo > promedioAlto) total = "🔽 Recomendación total: Apostar a 1-18";
+        else if (promedioAlto > promedioBajo) total = "🔼 Recomendación total: Apostar a 19-36";
+
+        document.getElementById("totalFinal").textContent = total;
+      } else {
+        document.getElementById("totalFinal").textContent = "—";
+      }
+    }
+    </script>
+
+  <style>
+    body { font-family: Arial, sans-serif; margin: 30px; }
+    table { border-collapse: collapse; width: 100%; max-width: 600px; }
+    th, td { padding: 10px; border: 1px solid #ccc; text-align: center; }
+    input { width: 80px; padding: 5px; text-align: center; }
+    button { margin-top: 20px; padding: 10px 20px; }
+  </style>
+</head>
+<body>
+
+  <h2>🔢 Evaluador de Apuesta: ¿1-18 o 19-36?</h2>
+  <p>Introduce los porcentajes observados en cada bloque de jugadas:</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Rango</th>
+        <th>1-18 (%)</th>
+        <th>19-36 (%)</th>
+        <th>0 (%)</th><th>Recomendación</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Últimos 100</td>
+        <td><input id="bajo100" type="number" min="0" max="100" step="0.01"></td>
+        <td><input id="alto100" type="number" min="0" max="100" step="0.01"></td>
+        <td><input id="cero100" type="number" min="0" max="100" step="0.01"></td><td id="r100">—</td>
+      </tr>
+      <tr>
+        <td>Últimos 200</td>
+        <td><input id="bajo200" type="number" min="0" max="100" step="0.01"></td>
+        <td><input id="alto200" type="number" min="0" max="100" step="0.01"></td>
+        <td><input id="cero200" type="number" min="0" max="100" step="0.01"></td><td id="r200">—</td>
+      </tr>
+      <tr>
+        <td>Últimos 500</td>
+        <td><input id="bajo500" type="number" min="0" max="100" step="0.01"></td>
+        <td><input id="alto500" type="number" min="0" max="100" step="0.01"></td>
+        <td><input id="cero500" type="number" min="0" max="100" step="0.01"></td><td id="r500">—</td>
+      </tr>
+      <tr>
+        <td>Últimos 1000</td>
+        <td><input id="bajo1000" type="number" min="0" max="100" step="0.01"></td>
+        <td><input id="alto1000" type="number" min="0" max="100" step="0.01"></td>
+        <td><input id="cero1000" type="number" min="0" max="100" step="0.01"></td><td id="r1000">—</td>
+      </tr>
+    </tbody>
+  </table>
+
+<div id="totalFinal" style="margin-top:20px; font-size:18px; font-weight:bold;">—</div>
+
+  <button onclick="evaluar()">Evaluar</button>
+  <button onclick="exportar()">📥 Exportar a Excel</button>
+
+  <script>
+    function recomendar(bajo, alto) {
+      if (bajo > alto) return "🔽 Apostar a 1-18";
+      if (alto > bajo) return "🔼 Apostar a 19-36";
+      return "🎯 Igual probabilidad";
+    }
+
+    function evaluar() {
+      const rangos = [100, 200, 500, 1000];
+      rangos.forEach(r => {
+        const bajo = parseFloat(document.getElementById("bajo" + r).value);
+        const alto = parseFloat(document.getElementById("alto" + r).value);
+        const resultado = isNaN(bajo) || isNaN(alto)
+          ? "❌ Faltan datos"
+          : recomendar(bajo, alto);
+        document.getElementById("r" + r).textContent = resultado;
+      });
+    }
+
+    function exportar() {
+      const rangos = [100, 200, 500, 1000];
+      const data = [];
+
+      rangos.forEach(r => {
+        const bajo = parseFloat(document.getElementById("bajo" + r).value);
+        const alto = parseFloat(document.getElementById("alto" + r).value);
+        const cero = parseFloat(document.getElementById("cero" + r).value) || 0;
+        const recomendacion = document.getElementById("r" + r).textContent;
+
+        if (!isNaN(bajo) && !isNaN(alto)) {
+          data.push({
+            'Rango': `Últimos ${r}`,
+            '1-18 (%)': bajo,
+            '19-36 (%)': alto,
+            '0 (%)': cero, 'Recomendación': recomendacion
+          });
+        }
+      });
+
+      if (data.length === 0) {
+        alert("No hay datos válidos para exportar.");
+        return;
+      }
+
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Evaluación Ruleta");
+      XLSX.writeFile(wb, `evaluacion_ruleta_${new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')}.xlsx`);
+    }
+  
+    function evaluar() {
+      const rangos = [100, 200, 500, 1000];
+      let sumaBajo = 0, sumaAlto = 0, sumaPeso = 0;
+
+      rangos.forEach(r => {
+        const bajo = parseFloat(document.getElementById("bajo" + r).value);
+        const alto = parseFloat(document.getElementById("alto" + r).value);
+        const resultado = isNaN(bajo) || isNaN(alto)
+          ? "❌ Faltan datos"
+          : recomendar(bajo, alto);
+        document.getElementById("r" + r).textContent = resultado;
+
+        if (!isNaN(bajo) && !isNaN(alto)) {
+          sumaBajo += bajo * r;
+          sumaAlto += alto * r;
+          sumaPeso += r;
+        }
+      });
+
+      if (sumaPeso > 0) {
+        const promedioBajo = sumaBajo / sumaPeso;
+        const promedioAlto = sumaAlto / sumaPeso;
+        let total = "🎯 Igual probabilidad";
+
+        if (promedioBajo > promedioAlto) total = "🔽 Recomendación total: Apostar a 1-18";
+        else if (promedioAlto > promedioBajo) total = "🔼 Recomendación total: Apostar a 19-36";
+
+        document.getElementById("totalFinal").textContent = total;
+      } else {
+        document.getElementById("totalFinal").textContent = "—";
+      }
+    }
+    </script>
+
+
+</body>
+</html>
